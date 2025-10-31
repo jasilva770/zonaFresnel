@@ -438,6 +438,10 @@
             font-size: 1rem;
         }
 
+        .calculator-input[type="range"] {
+            padding: 0;
+        }
+
         .calculator-result {
             background: #dbeafe;
             padding: 1rem;
@@ -459,6 +463,11 @@
             background: #10b981;
             border-radius: 50%;
             margin-top: 6px;
+        }
+
+        #clearance-status {
+            font-weight: bold;
+            font-size: 1.1rem;
         }
     </style>
 </head>
@@ -521,9 +530,15 @@
                         <label>Distancia desde TX (m):</label>
                         <input type="number" id="d1" class="calculator-input" value="500" min="1">
                     </div>
+                    <div>
+                        <label>Altura de obstáculo (m):</label>
+                        <input type="range" id="obstacleHeight" min="0" max="50" value="10" class="calculator-input">
+                        <span id="obstacleValue">10 m</span>
+                    </div>
                     <div class="calculator-result">
-                        <p style="font-size: 0.9rem; margin-bottom: 0.5rem;">Fórmula: r = 17.3 × √(d₁ × d₂) / (f × D)</p>
+                        <p style="font-size: 0.9rem; margin-bottom: 0.5rem;">Fórmula: r = 17.31 × √(d₁·d₂ / f)</p>
                         <p id="result" style="font-weight: bold; font-size: 1.1rem; color: #1e40af;">Radio: 0.00 metros</p>
+                        <p id="clearance-status" style="margin-top: 0.5rem;">✅ Zona Fresnel libre</p>
                     </div>
                 </div>
 
@@ -540,20 +555,20 @@
         </div>
 
         <div class="formula-section">
-            <h3>Fórmula de la Zona Fresnel</h3>
-            <div class="formula">r = 17.3 × √(d₁ × d₂) / (f × D)</div>
+            <h3>Fórmula de la Primera Zona Fresnel</h3>
+            <div class="formula">r = 17.31 × √( (d₁ × d₂) / f )</div>
             <div class="formula-explanation">
                 <div class="formula-item"><strong>r</strong>: Radio de la zona Fresnel (metros)</div>
-                <div class="formula-item"><strong>d₁</strong>: Distancia desde transmisor al punto (km)</div>
-                <div class="formula-item"><strong>d₂</strong>: Distancia desde punto al receptor (km)</div>
-                <div class="formula-item"><strong>f</strong>: Frecuencia (GHz) | <strong>D</strong>: Distancia total (km)</div>
+                <div class="formula-item"><strong>d₁, d₂</strong>: Distancias desde TX y RX al punto (km)</div>
+                <div class="formula-item"><strong>f</strong>: Frecuencia (GHz)</div>
+                <div class="formula-item">✅ ¡No se divide por la distancia total!</div>
             </div>
         </div>
     </main>
 
     <footer class="footer">
         <div class="container">
-            <p>© 2024 Guía Educativa sobre Zona Fresnel | Diseñado para estudiantes y profesionales de telecomunicaciones</p>
+            <p>© 2025 Guía Educativa sobre Zona Fresnel | Diseñado para estudiantes y profesionales de telecomunicaciones</p>
         </div>
     </footer>
 
@@ -634,7 +649,7 @@
             fresnel: "La zona Fresnel representa el espacio elipsoidal alrededor de la línea de vista directa. Los obstáculos dentro de esta zona pueden causar interferencia destructiva y degradar la señal, incluso si no bloquean directamente la línea de vista.",
             'point-to-point': "En enlaces punto a punto, la zona Fresnel es crítica para mantener la calidad de la señal. La obstrucción de más del 40% de la primera zona Fresnel puede causar pérdida significativa de señal, incluso con línea de vista directa.",
             multipoint: "En configuraciones multipunto a punto (como redes WiFi con un punto de acceso central), cada enlace individual tiene su propia zona Fresnel. Es importante mantener todas las zonas Fresnel libres de obstáculos para una comunicación óptima.",
-            cellular: "En redes celulares se aplica la teoría de celdas hexagonales, no la zona Fresnel. Las celdas se organizan en patrones hexagonales para maximizar la cobertura y minimizar la interferencia entre celdas adyacentes. El handover permite la transición suave entre celdas.",
+            cellular: "En redes celulares, la zona Fresnel es relevante en los enlaces de backhaul (torre a torre). Sin embargo, en la comunicación entre el teléfono y la torre, las señales suelen reflejarse y difractarse (NLOS), por lo que el modelo de celdas hexagonales y la gestión de handover son más relevantes que la línea de vista directa.",
             home: "En entornos domésticos, aunque las distancias son cortas, la zona Fresnel sigue siendo relevante. Objetos grandes como paredes, muebles o electrodomésticos pueden afectar la calidad de la señal WiFi, especialmente en frecuencias de 5 GHz donde la zona Fresnel es más pequeña."
         };
 
@@ -649,10 +664,8 @@
         // Navigation
         document.querySelectorAll('.nav-tab').forEach(tab => {
             tab.addEventListener('click', () => {
-                // Update active tab
                 document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
-                
                 const section = tab.dataset.section;
                 updateContent(section);
             });
@@ -664,42 +677,54 @@
             document.getElementById('animation-container').innerHTML = animations[section];
         }
 
-        // Calculator - Fixed formula implementation
+        // Calculator - CORRECTED FORMULA
         function calculateFresnel() {
-            const frequency = parseFloat(document.getElementById('frequency').value);
-            const distance = parseFloat(document.getElementById('distance').value);
-            const d1 = parseFloat(document.getElementById('d1').value);
+            const freqMHz = parseFloat(document.getElementById('frequency').value);
+            const totalM = parseFloat(document.getElementById('distance').value);
+            const d1M = parseFloat(document.getElementById('d1').value);
+            const obstacleHeight = parseFloat(document.getElementById('obstacleHeight').value) || 0;
             
-            if (frequency > 0 && distance > 0 && d1 > 0 && d1 < distance) {
-                const d2 = distance - d1;
-                // Using the exact formula provided: r = 17.3 * sqrt(d1 * d2 / (frequency * distance))
-                // Note: d1 and d2 should be in kilometers, frequency in GHz, distance in kilometers
-                // But the formula constant 17.3 assumes d1, d2 in km, f in GHz, D in km
-                // So we convert: d1(m) -> d1(km) = d1/1000, same for d2 and distance
-                // frequency(MHz) -> frequency(GHz) = frequency/1000
-                const d1_km = d1 / 1000;
-                const d2_km = d2 / 1000;
-                const distance_km = distance / 1000;
-                const frequency_ghz = frequency / 1000;
-                
-                const result = 17.3 * Math.sqrt((d1_km * d2_km) / (frequency_ghz * distance_km));
-                document.getElementById('result').textContent = `Radio: ${result.toFixed(2)} metros`;
+            if (freqMHz <= 0 || totalM <= 0 || d1M <= 0 || d1M >= totalM) {
+                document.getElementById('result').textContent = "Radio: -- metros";
+                const statusEl = document.getElementById('clearance-status');
+                statusEl.textContent = "❓ Datos inválidos";
+                statusEl.style.color = "#64748b";
+                return;
+            }
+
+            const d2M = totalM - d1M;
+            const fGHz = freqMHz / 1000;
+            const d1km = d1M / 1000;
+            const d2km = d2M / 1000;
+
+            // ✅ FÓRMULA CORRECTA: r = 17.31 * sqrt( (d1 * d2) / f )
+            const radius = 17.31 * Math.sqrt((d1km * d2km) / fGHz);
+            const clearance60 = radius * 0.6;
+
+            document.getElementById('result').textContent = `Radio: ${radius.toFixed(2)} m`;
+
+            const statusEl = document.getElementById('clearance-status');
+            if (obstacleHeight > clearance60) {
+                statusEl.textContent = "❌ Obstruido (>60%)";
+                statusEl.style.color = "#ef4444";
             } else {
-                document.getElementById('result').textContent = "Radio: 0.00 metros";
+                statusEl.textContent = "✅ Libre (<60%)";
+                statusEl.style.color = "#10b981";
             }
         }
 
-        // Add event listeners to calculator inputs
+        // Event listeners
         document.getElementById('frequency').addEventListener('input', calculateFresnel);
         document.getElementById('distance').addEventListener('input', calculateFresnel);
         document.getElementById('d1').addEventListener('input', calculateFresnel);
+        document.getElementById('obstacleHeight').addEventListener('input', function() {
+            document.getElementById('obstacleValue').textContent = this.value + ' m';
+            calculateFresnel();
+        });
 
-        // Initialize calculator
+        // Initialize
         calculateFresnel();
-
-        // Initialize with fresnel section
         updateContent('fresnel');
     </script>
 </body>
 </html>
-
