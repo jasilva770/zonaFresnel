@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zona Fresnel en Comunicaciones Inalámbricas</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4edf9 100%);
+            color: #333;
+            line-height: 1.6;
+        }
+
+        header {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .header-content {
+            text-align: center;
+        }
+
+        .header-content h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1e40af;
+            margin-bottom: 1rem;
+        }
+
+        .header-content p {
+            font-size: 1.1rem;
+            color: #64748b;
+        }
+
+        nav {
+            background: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-tabs {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            padding: 1rem 0;
+        }
+
+        .nav-tab {
+            padding: 0.75rem 1.5rem;
+            border: 2px solid transparent;
+            border-radius: 0.5rem;
+            background: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-tab:hover {
+            background: #f1f5f9;
+        }
+
+        .nav-tab.active {
+            border-color: #3b82f6;
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+        }
+
+        .card h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .animation-container {
+            width: 100%;
+            height: 250px;
+            background: linear-gradient(180deg, #dbeafe 0%, #bfdbfe 100%);
+            border-radius: 0.75rem;
+            position: relative;
+            overflow: hidden;
+            border: 2px solid #93c5fd;
+        }
+
+        /* Fresnel Animation Styles */
+        .fresnel-ellipse {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 60%;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, rgba(59, 130, 246, 0.1) 70%, transparent 100%);
+            border: 2px solid rgba(59, 130, 246, 0.6);
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        .tx, .rx, .ap {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .tx {
+            left: 20px;
+            background: #ef4444;
+        }
+
+        .rx {
+            right: 20px;
+            background: #10b981;
+        }
+
+        .ap {
+            left: 50%;
+            transform: translateX(-50%) translateY(-50%);
+            background: #8b5cf6;
+        }
+
+        .client {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            background: #f59e0b;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 10px;
+            animation: floatClient 3s ease-in-out infinite;
+        }
+
+        .obstruction {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 16px;
+            height: 64px;
+            background: #f97316;
+            border-radius: 4px;
+            animation: bounce 4s ease-in-out infinite;
+        }
+
+        .signal-path {
+            position: absolute;
+            top: 50%;
+            height: 2px;
+            background: #3b82f6;
+            transform: translateY(-50%);
+        }
+
+        .fresnel-label {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #3b82f6;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* Cellular Animation Styles */
+        .cell-tower {
+            position: absolute;
+            top: 30%;
+            transform: translateX(-50%);
+        }
+
+        .tower-pole {
+            width: 12px;
+            height: 64px;
+            background: #4b5563;
+            margin: 0 auto;
+        }
+
+        .tower-antenna {
+            width: 32px;
+            height: 32px;
+            background: #2563eb;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
+            margin: -16px auto 0;
+        }
+
+        .mobile-device {
+            position: absolute;
+            bottom: 20px;
+            width: 24px;
+            height: 40px;
+            background: #000;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            animation: moveMobile 6s ease-in-out infinite;
+        }
+
+        .handover-indicator {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #f59e0b;
+            border-radius: 50%;
+            animation: pulseSmall 2s ease-in-out infinite;
+        }
+
+        .cell-coverage {
+            position: absolute;
+            border-radius: 50%;
+            border: 2px solid rgba(34, 197, 94, 0.3);
+            opacity: 0.3;
+        }
+
+        /* Home Router Animation Styles */
+        .house {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .house-body {
+            width: 96px;
+            height: 64px;
+            background: #9ca3af;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .house-roof {
+            width: 0;
+            height: 0;
+            border-left: 24px solid transparent;
+            border-right: 24px solid transparent;
+            border-bottom: 32px solid #9ca3af;
+            margin: -16px auto 0;
+        }
+
+        .router {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+        }
+
+        .router-body {
+            width: 32px;
+            height: 16px;
+            background: #2563eb;
+            border-radius: 4px;
+        }
+
+        .router-stand {
+            width: 8px;
+            height: 24px;
+            background: #6b7280;
+            margin: 4px auto 0;
+        }
+
+        .home-device {
+            position: absolute;
+            bottom: 64px;
+            font-size: 24px;
+            animation: floatDevice 2s ease-in-out infinite;
+        }
+
+        .wifi-signal {
+            position: absolute;
+            bottom: 96px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 50%;
+            border: 2px solid rgba(59, 130, 246, 0.4);
+            opacity: 0.4;
+            animation: expandSignal 2s ease-in-out infinite;
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.05); }
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translate(-50%, -50%) translateY(0); }
+            25% { transform: translate(-50%, -50%) translateY(-10px); }
+            75% { transform: translate(-50%, -50%) translateY(10px); }
+        }
+
+        @keyframes moveMobile {
+            0%, 100% { left: 25%; }
+            25% { left: 35%; }
+            50% { left: 50%; }
+            75% { left: 65%; }
+        }
+
+        @keyframes pulseSmall {
+            0%, 100% { transform: scale(1); opacity: 0.7; }
+            50% { transform: scale(2); opacity: 1; }
+        }
+
+        @keyframes floatDevice {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        @keyframes expandSignal {
+            0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.4; }
+            50% { transform: translateX(-50%) scale(1.2); opacity: 0.2; }
+        }
+
+        @keyframes floatClient {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .formula-section {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+            text-align: center;
+            margin: 3rem 0;
+        }
+
+        .formula-section h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #1e293b;
+        }
+
+        .formula {
+            font-family: 'Courier New', monospace;
+            font-size: 1.25rem;
+            background: #f1f5f9;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+            font-weight: bold;
+            color: #1e40af;
+        }
+
+        .formula-explanation {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+            text-align: left;
+        }
+
+        .formula-item {
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        .footer {
+            background: #1e293b;
+            color: white;
+            text-align: center;
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+
+        .calculator-input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.5rem;
+            margin: 0.5rem 0;
+            font-size: 1rem;
+        }
+
+        .calculator-result {
+            background: #dbeafe;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+            text-align: center;
+        }
+
+        .recommendations li {
+            margin: 0.5rem 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        .recommendations .bullet {
+            width: 6px;
+            height: 6px;
+            background: #10b981;
+            border-radius: 50%;
+            margin-top: 6px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container header-content">
+            <h1>🌐 Zona Fresnel en Comunicaciones Inalámbricas</h1>
+            <p>Entendiendo la propagación de ondas en redes inalámbricas</p>
+        </div>
+    </header>
+
+    <nav>
+        <div class="container nav-tabs">
+            <button class="nav-tab active" data-section="fresnel">
+                👁️ Zona Fresnel
+            </button>
+            <button class="nav-tab" data-section="point-to-point">
+                📶 Punto a Punto
+            </button>
+            <button class="nav-tab" data-section="multipoint">
+                📡 Multipunto a Punto
+            </button>
+            <button class="nav-tab" data-section="cellular">
+                📱 Teoría de Celdas
+            </button>
+            <button class="nav-tab" data-section="home">
+                🏠 Router Doméstico
+            </button>
+        </div>
+    </nav>
+
+    <main class="container">
+        <div class="grid">
+            <div class="animation-area">
+                <div class="card">
+                    <h3 id="section-title">👁️ Visualización de la Zona Fresnel</h3>
+                    <div class="animation-container" id="animation-container">
+                        <!-- Animation content will be inserted by JavaScript -->
+                    </div>
+                    <p id="section-description" style="margin-top: 1rem; color: #64748b;">
+                        La zona Fresnel representa el espacio elipsoidal alrededor de la línea de vista 
+                        directa. Los obstáculos dentro de esta zona pueden causar interferencia destructiva 
+                        y degradar la señal, incluso si no bloquean directamente la línea de vista.
+                    </p>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="card">
+                    <h3>🧮 Calculadora Zona Fresnel</h3>
+                    <div>
+                        <label>Frecuencia (MHz):</label>
+                        <input type="number" id="frequency" class="calculator-input" value="2400" min="100" max="100000">
+                    </div>
+                    <div>
+                        <label>Distancia Total (m):</label>
+                        <input type="number" id="distance" class="calculator-input" value="1000" min="10" max="100000">
+                    </div>
+                    <div>
+                        <label>Distancia desde TX (m):</label>
+                        <input type="number" id="d1" class="calculator-input" value="500" min="1">
+                    </div>
+                    <div class="calculator-result">
+                        <p style="font-size: 0.9rem; margin-bottom: 0.5rem;">Fórmula: r = 17.3 × √(d₁ × d₂) / (f × D)</p>
+                        <p id="result" style="font-weight: bold; font-size: 1.1rem; color: #1e40af;">Radio: 0.00 metros</p>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 1rem;">
+                    <h3>⚡ Recomendaciones Prácticas</h3>
+                    <ul class="recommendations" style="margin-top: 1rem; font-size: 0.9rem;">
+                        <li><span class="bullet"></span> Mantén al menos el 60% de la primera zona Fresnel libre de obstáculos</li>
+                        <li><span class="bullet"></span> Considera la curvatura de la Tierra en enlaces de larga distancia</li>
+                        <li><span class="bullet"></span> Usa frecuencias más bajas para zonas Fresnel más grandes</li>
+                        <li><span class="bullet"></span> Eleva las antenas para evitar obstáculos en la zona Fresnel</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="formula-section">
+            <h3>Fórmula de la Zona Fresnel</h3>
+            <div class="formula">r = 17.3 × √(d₁ × d₂) / (f × D)</div>
+            <div class="formula-explanation">
+                <div class="formula-item"><strong>r</strong>: Radio de la zona Fresnel (metros)</div>
+                <div class="formula-item"><strong>d₁</strong>: Distancia desde transmisor al punto (km)</div>
+                <div class="formula-item"><strong>d₂</strong>: Distancia desde punto al receptor (km)</div>
+                <div class="formula-item"><strong>f</strong>: Frecuencia (GHz) | <strong>D</strong>: Distancia total (km)</div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>© 2024 Guía Educativa sobre Zona Fresnel | Diseñado para estudiantes y profesionales de telecomunicaciones</p>
+        </div>
+    </footer>
+
+    <script>
+        // Animation content templates
+        const animations = {
+            fresnel: `
+                <div class="fresnel-ellipse"></div>
+                <div class="tx">TX</div>
+                <div class="rx">RX</div>
+                <div class="obstruction"></div>
+                <div class="signal-path" style="left: 20px; right: 20px;"></div>
+                <div class="fresnel-label">Zona Fresnel</div>
+            `,
+            'point-to-point': `
+                <div class="fresnel-ellipse"></div>
+                <div class="tx">TX</div>
+                <div class="rx">RX</div>
+                <div class="obstruction"></div>
+                <div class="signal-path" style="left: 20px; right: 20px;"></div>
+                <div class="fresnel-label">Zona Fresnel</div>
+            `,
+            multipoint: `
+                <div class="ap">AP</div>
+                <div class="client" style="top: 30%; left: 25%;">C1</div>
+                <div class="client" style="top: 70%; left: 25%; animation-delay: 0.5s;">C2</div>
+                <div class="client" style="top: 30%; left: 75%; animation-delay: 1s;">C3</div>
+                <div class="client" style="top: 70%; left: 75%; animation-delay: 1.5s;">C4</div>
+                <div class="signal-path" style="top: 30%; left: 50%; right: 25%;"></div>
+                <div class="signal-path" style="top: 70%; left: 50%; right: 25%;"></div>
+                <div class="signal-path" style="top: 30%; left: 25%; right: 50%;"></div>
+                <div class="signal-path" style="top: 70%; left: 25%; right: 50%;"></div>
+                <div class="fresnel-label">Zonas Fresnel Múltiples</div>
+            `,
+            cellular: `
+                <div class="cell-tower" style="left: 20%;">
+                    <div class="tower-pole"></div>
+                    <div class="tower-antenna">📡</div>
+                    <div style="text-align: center; margin-top: 8px; font-size: 10px; color: #4b5563;">Celda 1</div>
+                </div>
+                <div class="cell-tower" style="left: 50%;">
+                    <div class="tower-pole"></div>
+                    <div class="tower-antenna">📡</div>
+                    <div style="text-align: center; margin-top: 8px; font-size: 10px; color: #4b5563;">Celda 2</div>
+                </div>
+                <div class="cell-tower" style="left: 80%;">
+                    <div class="tower-pole"></div>
+                    <div class="tower-antenna">📡</div>
+                    <div style="text-align: center; margin-top: 8px; font-size: 10px; color: #4b5563;">Celda 3</div>
+                </div>
+                <div class="mobile-device" style="left: 25%;">📱</div>
+                <div class="handover-indicator" style="top: 40%; left: 35%;"></div>
+                <div class="cell-coverage" style="width: 120px; height: 120px; left: 15%; top: 20%;"></div>
+                <div class="cell-coverage" style="width: 120px; height: 120px; left: 45%; top: 20%;"></div>
+                <div class="cell-coverage" style="width: 120px; height: 120px; left: 75%; top: 20%;"></div>
+            `,
+            home: `
+                <div class="house">
+                    <div class="house-body"></div>
+                    <div class="house-roof"></div>
+                </div>
+                <div class="router">
+                    <div class="router-body"></div>
+                    <div class="router-stand"></div>
+                    <div style="font-size: 10px; margin-top: 4px; color: #2563eb;">Router</div>
+                </div>
+                <div class="home-device" style="left: 25%; animation-delay: 0s;">💻</div>
+                <div class="home-device" style="left: 40%; animation-delay: 0.5s;">📱</div>
+                <div class="home-device" style="left: 60%; animation-delay: 1s;">📺</div>
+                <div class="home-device" style="left: 75%; animation-delay: 1.5s;">🎮</div>
+                <div class="wifi-signal" style="width: 60px; height: 60px; animation-delay: 0s;"></div>
+                <div class="wifi-signal" style="width: 80px; height: 80px; animation-delay: 0.3s;"></div>
+                <div class="wifi-signal" style="width: 100px; height: 100px; animation-delay: 0.6s;"></div>
+            `
+        };
+
+        const descriptions = {
+            fresnel: "La zona Fresnel representa el espacio elipsoidal alrededor de la línea de vista directa. Los obstáculos dentro de esta zona pueden causar interferencia destructiva y degradar la señal, incluso si no bloquean directamente la línea de vista.",
+            'point-to-point': "En enlaces punto a punto, la zona Fresnel es crítica para mantener la calidad de la señal. La obstrucción de más del 40% de la primera zona Fresnel puede causar pérdida significativa de señal, incluso con línea de vista directa.",
+            multipoint: "En configuraciones multipunto a punto (como redes WiFi con un punto de acceso central), cada enlace individual tiene su propia zona Fresnel. Es importante mantener todas las zonas Fresnel libres de obstáculos para una comunicación óptima.",
+            cellular: "En redes celulares se aplica la teoría de celdas hexagonales, no la zona Fresnel. Las celdas se organizan en patrones hexagonales para maximizar la cobertura y minimizar la interferencia entre celdas adyacentes. El handover permite la transición suave entre celdas.",
+            home: "En entornos domésticos, aunque las distancias son cortas, la zona Fresnel sigue siendo relevante. Objetos grandes como paredes, muebles o electrodomésticos pueden afectar la calidad de la señal WiFi, especialmente en frecuencias de 5 GHz donde la zona Fresnel es más pequeña."
+        };
+
+        const titles = {
+            fresnel: "👁️ Visualización de la Zona Fresnel",
+            'point-to-point': "📶 Enlaces Punto a Punto",
+            multipoint: "📡 Multipunto a Punto",
+            cellular: "📱 Teoría de Celdas en Redes Celulares",
+            home: "🏠 Router Doméstico y Zona Fresnel"
+        };
+
+        // Navigation
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Update active tab
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                const section = tab.dataset.section;
+                updateContent(section);
+            });
+        });
+
+        function updateContent(section) {
+            document.getElementById('section-title').textContent = titles[section];
+            document.getElementById('section-description').textContent = descriptions[section];
+            document.getElementById('animation-container').innerHTML = animations[section];
+        }
+
+        // Calculator - Fixed formula implementation
+        function calculateFresnel() {
+            const frequency = parseFloat(document.getElementById('frequency').value);
+            const distance = parseFloat(document.getElementById('distance').value);
+            const d1 = parseFloat(document.getElementById('d1').value);
+            
+            if (frequency > 0 && distance > 0 && d1 > 0 && d1 < distance) {
+                const d2 = distance - d1;
+                // Using the exact formula provided: r = 17.3 * sqrt(d1 * d2 / (frequency * distance))
+                // Note: d1 and d2 should be in kilometers, frequency in GHz, distance in kilometers
+                // But the formula constant 17.3 assumes d1, d2 in km, f in GHz, D in km
+                // So we convert: d1(m) -> d1(km) = d1/1000, same for d2 and distance
+                // frequency(MHz) -> frequency(GHz) = frequency/1000
+                const d1_km = d1 / 1000;
+                const d2_km = d2 / 1000;
+                const distance_km = distance / 1000;
+                const frequency_ghz = frequency / 1000;
+                
+                const result = 17.3 * Math.sqrt((d1_km * d2_km) / (frequency_ghz * distance_km));
+                document.getElementById('result').textContent = `Radio: ${result.toFixed(2)} metros`;
+            } else {
+                document.getElementById('result').textContent = "Radio: 0.00 metros";
+            }
+        }
+
+        // Add event listeners to calculator inputs
+        document.getElementById('frequency').addEventListener('input', calculateFresnel);
+        document.getElementById('distance').addEventListener('input', calculateFresnel);
+        document.getElementById('d1').addEventListener('input', calculateFresnel);
+
+        // Initialize calculator
+        calculateFresnel();
+
+        // Initialize with fresnel section
+        updateContent('fresnel');
+    </script>
+</body>
+</html>
+
